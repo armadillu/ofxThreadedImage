@@ -93,10 +93,14 @@ void ofxSimpleHttp::threadedFunction(){
 	if (debug) printf("ofxSimpleHttp >> exiting threadedFunction (queue len %d)\n", queueLenEstimation);
 	
 	if (!timeToStop){
-		if (debug) printf("detaching ofxSimpleHttp thread!\n");
+		//if (debug) printf("detaching ofxSimpleHttp thread!\n");
 		//detach();		//why? cos this is a 1-off thread, once the task is finished, this thread is to be cleared.
 						//If not detached or joined with, it takes resources... neat, uh?
-		pthread_detach(pthread_self());
+
+	#if  defined(TARGET_OSX) || defined(TARGET_LINUX)
+		//FIXME
+		pthread_detach(pthread_self()); //this is a workaround for this issue https://github.com/openframeworks/openFrameworks/issues/2506
+	#endif
 	}
 }
 
