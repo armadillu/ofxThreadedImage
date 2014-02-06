@@ -11,7 +11,7 @@ ofxThreadedImage::ofxThreadedImage(){
 
 ofxThreadedImage::~ofxThreadedImage(){
 	if (isThreadRunning()){
-		waitForThread(false);
+		waitForThread(true);
 	}
 }
 
@@ -46,7 +46,6 @@ void ofxThreadedImage::threadedFunction(){
 					FILE * file = fopen( filePath.c_str(), "wb");
 					fwrite (response.responseBody.c_str() , 1 , response.responseBody.length() , file );
 					fclose( file);
-					imageLoaded = false;
 					setUseTexture(false);
 					bool loaded = loadImage((string)IMG_DOWNLOAD_FOLDER_NAME + "/" + response.fileName);
 					if (loaded){
@@ -126,7 +125,8 @@ bool ofxThreadedImage::loadHttpImageThreaded(string url_){
 	alpha = 0;
 	whatToDo = LOAD_HTTP;
 	url = url_;
-	pendingTexture = true;	
+	pendingTexture = true;
+	imageLoaded = false;
 	setUseTexture(false);
 	startThread(true, false);
 	return true; //TODO! 
