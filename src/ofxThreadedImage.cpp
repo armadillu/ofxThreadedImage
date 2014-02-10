@@ -5,7 +5,7 @@ ofxThreadedImage::ofxThreadedImage(){
 	pendingTexture = false;
 	timeOut = 10;
 	alpha = 1;
-	alphaRiseSpeed = 0.05;
+	alphaRiseSpeed = 0.05; //20 frames to full alpha
 	imageLoaded = false;
 }
 
@@ -121,7 +121,7 @@ bool ofxThreadedImage::loadHttpImageBlocking(string url_){
 }
 
 
-bool ofxThreadedImage::loadHttpImageThreaded(string url_){
+void ofxThreadedImage::loadHttpImageThreaded(string url_){
 	alpha = 0;
 	whatToDo = LOAD_HTTP;
 	url = url_;
@@ -129,12 +129,11 @@ bool ofxThreadedImage::loadHttpImageThreaded(string url_){
 	imageLoaded = false;
 	setUseTexture(false);
 	startThread(true, false);
-	return true; //TODO! 
 }
 
 
 bool ofxThreadedImage::arePixelsAvailable(){
-	return imageLoaded; //TODO!
+	return imageLoaded;
 }
 
 void ofxThreadedImage::updateTextureIfNeeded(){
@@ -154,8 +153,8 @@ void ofxThreadedImage::saveThreaded(string where, ofImageQualityType quality_){
 };
 
 
-void ofxThreadedImage::draw(float _x, float _y){
-	ofxThreadedImage::draw(_x, _y, getPixelsRef().getWidth(), getPixelsRef().getHeight() );
+void ofxThreadedImage::draw(float _x, float _y, bool fadeInOnDelayedLoad){
+	ofxThreadedImage::draw(_x, _y, getPixelsRef().getWidth(), getPixelsRef().getHeight(), fadeInOnDelayedLoad );
 }
 
 void ofxThreadedImage::draw(float _x, float _y, float _w, float _h, bool fadeInOnLoad){

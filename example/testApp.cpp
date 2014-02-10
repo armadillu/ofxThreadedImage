@@ -11,7 +11,7 @@ void testApp::draw(){
 
 	img.draw(0,0, ofGetWidth(), ofGetHeight(), true);
 
-	//rotating cube
+	//draw rotating thingie to see blocking calls
 	glPushMatrix();
 	glTranslatef(ofGetWidth() - 60,60, 0);
 	glRotatef( ofGetFrameNum() * 3, 0,0,1);
@@ -20,11 +20,12 @@ void testApp::draw(){
 	ofRect(-h/2,h/2, h,50);
 	glPopMatrix();
 
+	//instructions
 	ofDrawBitmapStringHighlight("press '1' to load image from http on main thread\n"
 								"press '2' to load disk image on background thread\n"
 								"press '3' to load image from http on main thread\n"
 								"press '4' to load image from http on background thread\n"
-								"press '5' to save current image to disk in back thread",
+								"press '5' to save current image to disk in a background thread",
 								20, ofGetHeight() - 80
 								);
 }

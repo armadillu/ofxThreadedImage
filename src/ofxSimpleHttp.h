@@ -18,7 +18,6 @@
 	void testApp::newResponse(ofxSimpleHttpResponse &response){
 		printf("download of '%s' returned : %s\n", response.url.c_str(), response.ok ? "OK" : "KO" );
 	}
-
  
  3 - add Listener:
  
@@ -28,6 +27,8 @@
 
 	blocking:		ofxSimpleHttpResponse response = http.fetchURLBlocking("http://uri.cat/");
 	non-blocking:	ofxSimpleHttpResponse response = http.fetchURL("http://uri.cat/"); 
+	
+	//you can queue several non-bloking requests and they will download one after each other
  
  5 - Recieve data when available:
 	
@@ -89,8 +90,10 @@ class ofxSimpleHttp : public ofThread, public ofBaseDraws{
 		void						fetchURL(string url, bool ingoreReply = false);	
 		ofxSimpleHttpResponse		fetchURLBlocking(char* url);
 		ofxSimpleHttpResponse		fetchURLBlocking(string url);
+
 		void						draw(float x, float y , float w , float h );	//draws a box
 		void						draw(float x, float y );	//draws a box
+
 		float getHeight(){ if ( isThreadRunning() ) return 18 * 4; else return 18;}
 		float getWidth(){ return 320;}
 	
@@ -98,19 +101,20 @@ class ofxSimpleHttp : public ofThread, public ofBaseDraws{
 	
 		int							getPendingDownloads();
 		float						getCurrentDownloadProgress();	//retuns [0..1] how complete is the download
-		string						getCurrentDownloadFileName();	
+		string						getCurrentDownloadFileName();
 		ofxSimpleHttpResponse*		getCurrentDownloadResponse(){ return &response;}	//get this to read progress from another thread, might return NULL if no download is running
 	
 		// properties //////////////////////////////////////////////////////////
 	
-		void						setTimeOut( int seconds );
+		void						setTimeOut(int seconds);
 		void						setVerbose(bool verbose);
 		void						setUserAgent( string newUserAgent );
 		void						setAcceptString( string newAcceptString );
+		void						setMaxQueueLenght(int len);
 			
 		ofEvent<ofxSimpleHttpResponse>		newResponseEvent;
 	
-	private:		
+	private:
 		
 		bool downloadURL( ofxSimpleHttpResponse * resp, bool sendResultThroughEvents );
 		void threadedFunction();	//the queue runs here
@@ -123,6 +127,7 @@ class ofxSimpleHttp : public ofThread, public ofBaseDraws{
 		queue<ofxSimpleHttpResponse*>	q;		//the pending requests
 		bool							timeToStop;
 		int								queueLenEstimation;
+		int								maxQueueLen;
 	
 		ofxSimpleHttpResponse			response;
 };

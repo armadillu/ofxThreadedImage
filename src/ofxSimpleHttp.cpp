@@ -10,20 +10,12 @@
 
 #include "ofxSimpleHttp.h"
 #include "ofEvents.h"
-#include "Poco/Net/HTTPClientSession.h"
-#include "Poco/Net/HTTPRequest.h"
-#include "Poco/Net/HTTPResponse.h"
-#include "Poco/Net/HTMLForm.h"
-#include "Poco/StreamCopier.h"
-#include "Poco/Path.h"
-#include "Poco/URI.h"
-#include "Poco/Exception.h"
-#include "Poco/Mutex.h"
 
 
 ofxSimpleHttp::ofxSimpleHttp(){
 	timeOut = 10;
 	queueLenEstimation = 0;
+	maxQueueLen = 100;
 	debug = false;
 	timeToStop = false;
 	userAgent = "ofxSimpleHttp (Poco Powered)";
@@ -47,6 +39,7 @@ ofxSimpleHttp::~ofxSimpleHttp(){
 	}	
 }
 
+
 void ofxSimpleHttp::setTimeOut(int seconds){
 	timeOut = seconds;
 }
@@ -61,8 +54,14 @@ void ofxSimpleHttp::setUserAgent( string newUserAgent ){
 	userAgent = newUserAgent;
 }
 
+
 void ofxSimpleHttp::setAcceptString( string newAcceptString ){
 	acceptString = newAcceptString;
+}
+
+
+void ofxSimpleHttp::setMaxQueueLenght(int len){
+	maxQueueLen = len;
 }
 
 
@@ -91,17 +90,12 @@ void ofxSimpleHttp::threadedFunction(){
 	}
 	//if no more pending requests, let the thread die...
 	if (debug) printf("ofxSimpleHttp >> exiting threadedFunction (queue len %d)\n", queueLenEstimation);
-	
-	if (!timeToStop){
-		//if (debug) printf("detaching ofxSimpleHttp thread!\n");
-		//detach();		//why? cos this is a 1-off thread, once the task is finished, this thread is to be cleared.
-						//If not detached or joined with, it takes resources... neat, uh?
 
 	#if  defined(TARGET_OSX) || defined(TARGET_LINUX)
-		//FIXME
+	if (!timeToStop){ //FIXME! TODO
 		pthread_detach(pthread_self()); //this is a workaround for this issue https://github.com/openframeworks/openFrameworks/issues/2506
-	#endif
 	}
+	#endif
 }
 
 
@@ -193,7 +187,7 @@ void ofxSimpleHttp::draw(float x, float y){
 string ofxSimpleHttp::extractFileFromUrl(string url){
 
 	int found = url.find_last_of("/");
-	string file = url.substr(found+1);
+	string file = url.substr(found + 1);
 	return file;
 }
 
@@ -206,7 +200,7 @@ void ofxSimpleHttp::fetchURL(char* url, bool ignoreReply){
 
 void ofxSimpleHttp::fetchURL(string url, bool ignoreReply){
 	
-	if (queueLenEstimation > 100){
+	if (queueLenEstimation >= maxQueueLen){
 		printf( "ofxSimpleHttp::fetchURL can't do that, queue is too long already (%d)!\n", queueLenEstimation );
 		return;
 	}

@@ -14,8 +14,8 @@
 	load from disk threaded:
  
 	this will work automatically if you draw from the supplied ofxThreadedImage::draw();
-	It will not work if you try to draw the texture directly (ofImage.getTextureReference().dra())
-	if you want to draw thorugh the texture, make sure you call updateTextureIfNeeded() before drawing
+	It will not work if you try to draw the texture directly (ofImage.getTextureReference().draw())
+	if you want to draw thorugh the texture, make sure you call updateTextureIfNeeded() before doing so
  
 	learn by example:
  
@@ -42,8 +42,7 @@ class ofxThreadedImage : public ofThread, public ofImage {
 	public:
 
 		enum Action		{ SAVE = 0, LOAD, LOAD_HTTP };
-		enum Status		{ IMG_OK = 1, IMG_NOT_FOUND };
-	
+
 		string					fileName;
 		string					url;
 		ofImageQualityType		quality;
@@ -60,11 +59,10 @@ class ofxThreadedImage : public ofThread, public ofImage {
 		void loadImageThreaded(string fileName);
 
 		bool loadHttpImageBlocking(string url);
-		bool loadHttpImageThreaded(string url);
+		void loadHttpImageThreaded(string url);
 		void setHttpRequestTimeOut(float t){ timeOut = t;}
 
 		//save file as jpeg with custom quality (regardless of file extension!)
-		// quality [0..100]
 		void saveThreaded(string where, ofImageQualityType qualityLevel);
 
 		//call this method before draw, only in case you draw through the textureReference.
@@ -75,16 +73,15 @@ class ofxThreadedImage : public ofThread, public ofImage {
 		bool arePixelsAvailable();
 
 		//wrappers for ofImage draw, so that we can load the pixels to GL before drawing if necessary
-		void draw(float _x, float _y);
+		void draw(float _x, float _y, bool fadeInOnDelayedLoad = true);
 		void draw(float _x, float _y, float _w, float _h, bool fadeInOnDelayedLoad = true);
 
 		/*per frame alpha increment [0..1]*/
-		void setFadeInSpeed(float alphaRiseSpeed_){alphaRiseSpeed = alphaRiseSpeed_;};
+		void setFadeInSpeed(float alphaRiseSpeed_){ alphaRiseSpeed = alphaRiseSpeed_; }
 
 
 	private:
 	
-		void saveJpg(string fileName, ofImageQualityType quality);
 		void threadedFunction();
 
 		float timeOut;
