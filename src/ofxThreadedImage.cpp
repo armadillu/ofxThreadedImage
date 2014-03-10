@@ -168,10 +168,12 @@ void ofxThreadedImage::draw(float _x, float _y, float _w, float _h, bool fadeInO
 			alpha += alphaRiseSpeed;
 			if(alpha > 1.0) alpha = 1.0;
 		}
-		//glPushAttrib(GL_CURRENT_BIT);//what alternative to use in GLES?
+
+		ofPushStyle();
 			ofSetColor(255,255,255, 255 * alpha);
 			ofImage::draw(_x, _y, _w, _h);
-		//glPopAttrib();
+        ofPopStyle();
+
 	}else{
 		if(tex.bAllocated()){
 			ofImage::draw(_x, _y, _w, _h);
