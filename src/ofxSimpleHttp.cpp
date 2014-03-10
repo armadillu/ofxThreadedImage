@@ -174,7 +174,8 @@ void ofxSimpleHttp::draw(float x, float y , float w , float h  ){
 //		aux.insert(i, "\n");
 //	}
 	
-	glColor3ub(0,127,255);
+	//glColor3ub(0,127,255);
+	ofSetColor(0,127,255);
 	ofDrawBitmapString(aux, x + 3, y + 12 );
 		
 }
