@@ -19,18 +19,18 @@ ofxThreadedImage::~ofxThreadedImage(){
 void ofxThreadedImage::threadedFunction(){
 
 	if( lock() ){
-		
+
 		switch (whatToDo) {
 			case SAVE:
 				ofSaveImage(getPixelsRef(), fileName, quality);
 				break;
-				
+
 			case LOAD:
 				alpha = 0.0f;
 				loadImageBlocking(fileName);
 				break;
-				
-			case LOAD_HTTP:	
+
+			case LOAD_HTTP:
 				alpha = 0;
 				ofxSimpleHttp http;
 				http.setTimeOut(timeOut);
@@ -56,11 +56,11 @@ void ofxThreadedImage::threadedFunction(){
 				}else{
 					ofLog(OF_LOG_ERROR, "loadHttpImageBlocking() failed to download (%d) > %s\n", response.status, url.c_str() );
 				}
-				
+
 				break;
-		}		
+		}
 		unlock();
-		
+
 	} else {
 		printf("ofxThreadedImage::threadedFunction Can't %s %s, thread is already running", whatToDo == SAVE ? "Save" : "Load",  fileName.c_str() );
 	}
@@ -142,7 +142,7 @@ void ofxThreadedImage::updateTextureIfNeeded(){
 		tex.allocate(getPixelsRef());
 		update();
 		pendingTexture = false;
-	}	
+	}
 }
 
 void ofxThreadedImage::saveThreaded(string where, ofImageQualityType quality_){
@@ -169,7 +169,6 @@ void ofxThreadedImage::draw(float _x, float _y, float _w, float _h, bool fadeInO
 			if(alpha > 1.0) alpha = 1.0;
 		}
 		//glPushAttrib(GL_CURRENT_BIT);//what alternative to use in GLES?
-			//glColor4ub(255,255,255, 255 * alpha);
 			ofSetColor(255,255,255, 255 * alpha);
 			ofImage::draw(_x, _y, _w, _h);
 		//glPopAttrib();

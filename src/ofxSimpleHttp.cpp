@@ -36,7 +36,7 @@ ofxSimpleHttp::~ofxSimpleHttp(){
 			delete r;
 			q.pop();
 		unlock();
-	}	
+	}
 }
 
 
@@ -69,19 +69,19 @@ void ofxSimpleHttp::threadedFunction(){
 
 	if (debug) printf("\nofxSimpleHttp >> start threadedFunction\n");
 	queueLenEstimation = 0;
-	
+
 	lock();
 	queueLenEstimation = q.size();
 	unlock();
-	
+
 	while( queueLenEstimation > 0 && timeToStop == false){
-		
+
 		lock();
 			ofxSimpleHttpResponse * r = q.front();
 		unlock();
-		
+
 			downloadURL(r, true);
-		
+
 		lock();
 			delete r;
 			q.pop();
@@ -108,21 +108,21 @@ string ofxSimpleHttp::getCurrentDownloadFileName(){
 			ofxSimpleHttpResponse * r = q.front();
 			download = ( r->fileName );
 		}
-	unlock();	
-	return download;	
+	unlock();
+	return download;
 }
-	
-	
+
+
 int ofxSimpleHttp::getPendingDownloads(){
 	lock();
 		queueLenEstimation = q.size();
-	unlock();	
+	unlock();
 	return queueLenEstimation;
 }
 
 
 float ofxSimpleHttp::getCurrentDownloadProgress(){
-	
+
 	float downloadPercent = -1;
 	lock();
 		int n = q.size();
@@ -131,7 +131,7 @@ float ofxSimpleHttp::getCurrentDownloadProgress(){
 			if ( r->serverReportedSize > 0)
 				downloadPercent = fabs( (float) ( r->responseBody.size()) / (0.1f + r->serverReportedSize) );
 		}
-	unlock();	
+	unlock();
 	return downloadPercent;
 }
 
@@ -140,7 +140,7 @@ void ofxSimpleHttp::stopCurrentDownload(){
 
 	lock();
 		int n = q.size();
-		if ( isThreadRunning() && n > 0){			
+		if ( isThreadRunning() && n > 0){
 			ofxSimpleHttpResponse * r = q.front();
 			if (debug) printf( "ofxSimpleHttp::stopCurrentDownload() >> about to stop download of %s...\n", r->fileName.c_str() );
 			try{
@@ -150,18 +150,18 @@ void ofxSimpleHttp::stopCurrentDownload(){
 				printf( "ofxSimpleHttp::stopCurrentDownload(%s) >> Exception: %s\n", r->fileName.c_str(), exc.displayText().c_str() );
 			}
 		}
-	unlock();	
+	unlock();
 }
 
 void ofxSimpleHttp::draw(float x, float y , float w , float h  ){
-	
+
 	string aux;
 	lock();
 	int n = q.size();
 	if ( isThreadRunning() && n > 0 ){
 		ofxSimpleHttpResponse * r = q.front();
-		float downloadPercent = fabs( (float) (r->responseBody.size()) / (0.1f + r->serverReportedSize) );		
-		if ( r->serverReportedSize >= 0) 
+		float downloadPercent = fabs( (float) (r->responseBody.size()) / (0.1f + r->serverReportedSize) );
+		if ( r->serverReportedSize >= 0)
 			aux = "ofxSimpleHttp Now Fetching:\n" + r->url.substr(0, w / 8 ) + "\n" + ofToString(100.0f * downloadPercent,1) + "% done...\nQueue Size " + ofToString(n) ;
 		else
 			aux = "ofxSimpleHttp Now Fetching:\n" + r->url.substr(0, w / 8) + "\nQueue Size " + ofToString(n);
@@ -169,17 +169,16 @@ void ofxSimpleHttp::draw(float x, float y , float w , float h  ){
 		aux= "ofxSimpleHttp idle...";
 	}
 	unlock();
-	
+
 //	for(int i = 0; i < aux.length(); i+= w / 8){	//break up the string with \n to fit in supplied width
 //		aux.insert(i, "\n");
 //	}
-	
-	//glColor3ub(0,127,255);
+
 	ofSetColor(0,127,255);
 	ofDrawBitmapString(aux, x + 3, y + 12 );
-		
+
 }
-	
+
 void ofxSimpleHttp::draw(float x, float y){
 	draw(x,y, ofGetWidth() -x, 100);
 }
@@ -200,7 +199,7 @@ void ofxSimpleHttp::fetchURL(char* url, bool ignoreReply){
 
 
 void ofxSimpleHttp::fetchURL(string url, bool ignoreReply){
-	
+
 	if (queueLenEstimation >= maxQueueLen){
 		printf( "ofxSimpleHttp::fetchURL can't do that, queue is too long already (%d)!\n", queueLenEstimation );
 		return;
@@ -212,25 +211,25 @@ void ofxSimpleHttp::fetchURL(string url, bool ignoreReply){
 	response->fileName = extractFileFromUrl(url);
 	response->ignoreReply = ignoreReply;
 	response->session = NULL;
-			
+
 	lock();
 		q.push(response);
 	unlock();
-	
+
 	if ( !isThreadRunning() ){	//if the queue is not running, lets start it
 		startThread(true, false);
-	}	
+	}
 }
 
 
-ofxSimpleHttpResponse ofxSimpleHttp::fetchURLBlocking(char*  url){	
+ofxSimpleHttpResponse ofxSimpleHttp::fetchURLBlocking(char*  url){
 	string aux = url;
-	return fetchURLBlocking(aux);	
+	return fetchURLBlocking(aux);
 }
 
 
 ofxSimpleHttpResponse ofxSimpleHttp::fetchURLBlocking(string  url){
-	
+
 	response.url = url;
 	response.downloadCanceled = false;
 	response.session = NULL;
@@ -241,7 +240,7 @@ ofxSimpleHttpResponse ofxSimpleHttp::fetchURLBlocking(string  url){
 }
 
 
-bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThroughEvents ){  
+bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThroughEvents ){
 
 	resp->ok = FALSE;
 
@@ -253,7 +252,7 @@ bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThr
 
 		HTTPClientSession session( uri.getHost(), uri.getPort() );
 		resp->session = &session;
-		
+
 		HTTPRequest req( HTTPRequest::HTTP_GET, path, HTTPMessage::HTTP_1_1 );
 		req.set( "User-Agent", userAgent.c_str() );
 		if (acceptString.length() > 0){
@@ -271,18 +270,18 @@ bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThr
 		resp->reasonForStatus = res.getReasonForStatus( res.getStatus() );
 		resp->contentType = res.getContentType();
 		resp->serverReportedSize = res.getContentLength();
-		
+
 		if (debug) if (resp->serverReportedSize == -1) printf("ofxSimpleHttp::downloadURL(%s) >> Server doesn't report download size...\n", resp->fileName.c_str() );
 		if (debug) printf("ofxSimpleHttp::downloadURL() >> about to start download (%s, %d bytes)\n", resp->fileName.c_str(), res.getContentLength() );
 		if (debug) printf("ofxSimpleHttp::downloadURL() >> server reports request staus: (%d-%s)\n", resp->status, resp->reasonForStatus.c_str() );
-		
-		if (timeToStop) { 
+
+		if (timeToStop) {
 			resp->session = NULL;
 			return false;
 		};
-		
+
 		try{
-			StreamCopier::copyToString(rs, resp->responseBody);	//copy the data...		
+			StreamCopier::copyToString(rs, resp->responseBody);	//copy the data...
 		}catch(Exception& exc){
 			printf("ofxSimpleHttp::downloadURL(%s) >> Exception: %s\n", resp->fileName.c_str(), exc.displayText().c_str() );
 			resp->reasonForStatus = exc.displayText();
@@ -291,8 +290,8 @@ bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThr
 			resp->session = NULL;
 			return false;
 		}
-				
-		if (resp->downloadCanceled){	
+
+		if (resp->downloadCanceled){
 			if(debug) printf("ofxSimpleHttp::downloadURL() >> download (%s) canceled!\n", resp->fileName.c_str());
 			resp->reasonForStatus = "download canceled by user!";
 			resp->ok = false;
@@ -300,11 +299,11 @@ bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThr
 			resp->session = NULL;
 			return false;
 		}
-		
+
 		if(debug) printf("ofxSimpleHttp::downloadURL() >> downloaded (%s)\n", resp->fileName.c_str());
-		
+
 		if ( resp->serverReportedSize > 0 && resp->serverReportedSize != resp->responseBody.size() ) {
-			if(debug) printf( "ofxSimpleHttp::downloadURL() >> Download size mismatch (%s) >> Server: %d Downloaded: %d\n", 
+			if(debug) printf( "ofxSimpleHttp::downloadURL() >> Download size mismatch (%s) >> Server: %d Downloaded: %d\n",
 								resp->fileName.c_str(), resp->serverReportedSize, (int)resp->responseBody.size() );
 			resp->reasonForStatus = "Download size mismatch";
 			resp->status = -1;
@@ -316,11 +315,11 @@ bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThr
 				resp->ok = false;
 			}
 		}
-		
-		if (sendResultThroughEvents ){	
+
+		if (sendResultThroughEvents ){
 			if ( !resp->ignoreReply )
 				if (timeToStop == false)	//see if we have been destructed!
-					ofNotifyEvent( newResponseEvent, *resp, this );	
+					ofNotifyEvent( newResponseEvent, *resp, this );
 		}
 
 	}catch(Exception& exc){
