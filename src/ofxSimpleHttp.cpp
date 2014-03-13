@@ -10,7 +10,7 @@
 
 #include "ofxSimpleHttp.h"
 #include "ofEvents.h"
-
+#include "poco/Net/HTTPStreamFactory.h"
 
 ofxSimpleHttp::ofxSimpleHttp(){
 	timeOut = 10;
@@ -80,18 +80,19 @@ void ofxSimpleHttp::threadedFunction(){
 			ofxSimpleHttpResponse * r = q.front();
 		unlock();
 
-			downloadURL(r, true);
+			if(r->downloadToDisk) downloadURLtoDisk(r, true);
+			else downloadURL(r, true);
 
 		lock();
-			delete r;
 			q.pop();
+			delete r;
 			queueLenEstimation = q.size();
 		unlock();
 	}
 	//if no more pending requests, let the thread die...
 	if (debug) printf("ofxSimpleHttp >> exiting threadedFunction (queue len %d)\n", queueLenEstimation);
 
-	#if  defined(TARGET_OSX) || defined(TARGET_LINUX)
+	#if  defined(TARGET_OSX) || defined(TARGET_LINUX) /*I'm not 100% sure of linux*/
 	if (!timeToStop){ //FIXME! TODO
 		pthread_detach(pthread_self()); //this is a workaround for this issue https://github.com/openframeworks/openFrameworks/issues/2506
 	}
@@ -160,7 +161,8 @@ void ofxSimpleHttp::draw(float x, float y , float w , float h  ){
 	int n = q.size();
 	if ( isThreadRunning() && n > 0 ){
 		ofxSimpleHttpResponse * r = q.front();
-		float downloadPercent = fabs( (float) (r->responseBody.size()) / (0.1f + r->serverReportedSize) );
+		//float downloadPercent = fabs( (float) (r->responseBody.size()) / (0.1f + r->serverReportedSize) );
+		float downloadPercent = 0;
 		if ( r->serverReportedSize >= 0)
 			aux = "ofxSimpleHttp Now Fetching:\n" + r->url.substr(0, w / 8 ) + "\n" + ofToString(100.0f * downloadPercent,1) + "% done...\nQueue Size " + ofToString(n) ;
 		else
@@ -229,6 +231,33 @@ ofxSimpleHttpResponse ofxSimpleHttp::fetchURLBlocking(string  url){
 }
 
 
+void ofxSimpleHttp::fetchURLToDisk(string url, bool ignoreReply, string dirWhereToSave){
+
+	if (queueLenEstimation >= maxQueueLen){
+		printf( "ofxSimpleHttp::fetchURL can't do that, queue is too long already (%d)!\n", queueLenEstimation );
+		return;
+	}
+
+	string savePath = dirWhereToSave == "" ? extractFileFromUrl(url) : ofToDataPath(dirWhereToSave, true) + "/" + extractFileFromUrl(url);
+
+	ofxSimpleHttpResponse *response = new ofxSimpleHttpResponse();
+	response->url = url;
+	response->downloadCanceled = false;
+	response->fileName = extractFileFromUrl(url);
+	response->ignoreReply = ignoreReply;
+	response->session = NULL;
+	response->downloadToDisk = true;
+
+	lock();
+	q.push(response);
+	unlock();
+
+	if ( !isThreadRunning() ){	//if the queue is not running, lets start it
+		startThread(true, false);
+	}
+}
+
+
 ofxSimpleHttpResponse ofxSimpleHttp::fetchURLtoDiskBlocking(string  url, string dirWhereToSave){
 
 	string savePath = dirWhereToSave == "" ? extractFileFromUrl(url) : ofToDataPath(dirWhereToSave) + "/" + extractFileFromUrl(url);
@@ -241,18 +270,18 @@ ofxSimpleHttpResponse ofxSimpleHttp::fetchURLtoDiskBlocking(string  url, string 
 	response.session = NULL;
 	response.fileName = savePath;
 	response.ignoreReply = false;
-	bool ok = downloadURLtoDiskBlocking(&response, false);
+	bool ok = downloadURLtoDisk(&response, false);
 	return response;
 }
 
 
-bool ofxSimpleHttp::downloadURLtoDiskBlocking(ofxSimpleHttpResponse* resp, bool sendResultThroughEvents){
+bool ofxSimpleHttp::downloadURLtoDisk(ofxSimpleHttpResponse* resp, bool sendResultThroughEvents){
 
 	bool ok;
 	ofstream myfile;
 
 	//create a file to save the stream to
-	myfile.open( resp->fileName.c_str(), std::ios::binary );
+	myfile.open( ofToDataPath(resp->fileName, true ).c_str(), std::ios::binary );
 	//myfile.open(ofToDataPath(filename).c_str()); //for not binary?
 
 	try {
@@ -307,12 +336,12 @@ bool ofxSimpleHttp::downloadURLtoDiskBlocking(ofxSimpleHttpResponse* resp, bool 
 			}
 		}
 
-//		if (sendResultThroughEvents ){
-//			if ( !resp->ignoreReply )
-//				if (timeToStop == false){	//see if we have been destructed!
-//					ofNotifyEvent( newResponseEvent, *resp, this ); //should be from main thread! TODO!
-//				}
-//		}
+		if (sendResultThroughEvents ){
+			if ( !resp->ignoreReply )
+				if (timeToStop == false){	//see if we have been destructed!
+					ofNotifyEvent( newResponseEvent, *resp, this ); //should be from main thread! TODO!
+				}
+		}
 
 
 		cout << "download finished! " << resp->url << " !" << endl;
@@ -414,9 +443,11 @@ bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThr
 		}
 
 		if (sendResultThroughEvents ){
-			if ( !resp->ignoreReply )
-				if (timeToStop == false)	//see if we have been destructed!
+			if ( !resp->ignoreReply ){
+				if (timeToStop == false){	//see if we have been destructed!
 					ofNotifyEvent( newResponseEvent, *resp, this );
+				}
+			}
 		}
 
 	}catch(Exception& exc){

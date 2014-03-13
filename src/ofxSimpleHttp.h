@@ -64,6 +64,7 @@ struct ofxSimpleHttpResponse{
 	bool						ok;
 	bool						ignoreReply;
 	bool						downloadCanceled;
+	bool						downloadToDisk;
 	int							status; 			// return code for the response ie: 200 = OK
 	int							serverReportedSize;
 	string						reasonForStatus;	// text explaining the status
@@ -73,7 +74,10 @@ struct ofxSimpleHttpResponse{
 	HTTPClientSession *			session;			
 	string						url;
 	string						fileName;
-	
+
+	ofxSimpleHttpResponse(){
+		downloadToDisk = false;
+	}
 };
 
 
@@ -86,9 +90,15 @@ class ofxSimpleHttp : public ofThread, public ofBaseDraws{
 
 		// actions //////////////////////////////////////////////////////////////
 
+		//download to RAM ( download to ofxSimpleHttpResponse->responseBody)
 		void						fetchURL(string url, bool ingoreReply = false);
 		ofxSimpleHttpResponse		fetchURLBlocking(string url);
-		ofxSimpleHttpResponse		fetchURLtoDiskBlocking(string url, string dirWhereToSave = "ofxSimpleHttpDownloads");
+
+		//download to Disk
+		void						fetchURLToDisk(string url, bool ignoreReply = false, string dirWhereToSave = ".");
+		ofxSimpleHttpResponse		fetchURLtoDiskBlocking(string url, string dirWhereToSave = ".");
+
+		void						update(); //this is mainly used to get notifications in the main thread
 
 		void						draw(float x, float y , float w , float h );	//draws a box
 		void						draw(float x, float y );	//draws a box
@@ -116,7 +126,7 @@ class ofxSimpleHttp : public ofThread, public ofBaseDraws{
 	private:
 		
 		bool downloadURL( ofxSimpleHttpResponse * resp, bool sendResultThroughEvents );
-		bool downloadURLtoDiskBlocking(ofxSimpleHttpResponse* resp, bool sendResultThroughEvents);
+		bool downloadURLtoDisk(ofxSimpleHttpResponse* resp, bool sendResultThroughEvents);
 
 		void threadedFunction();	//the queue runs here
 		string extractFileFromUrl(string url);
@@ -131,4 +141,7 @@ class ofxSimpleHttp : public ofThread, public ofBaseDraws{
 		int								maxQueueLen;
 	
 		ofxSimpleHttpResponse			response;
+
+		queue<ofxSimpleHttpResponse>	responsesPendingNotification; //we store here downloads that arrived so that we can notify from main thread 
+
 };
