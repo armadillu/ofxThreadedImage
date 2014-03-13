@@ -142,6 +142,6 @@ class ofxSimpleHttp : public ofThread, public ofBaseDraws{
 	
 		ofxSimpleHttpResponse			response;
 
-		queue<ofxSimpleHttpResponse>	responsesPendingNotification; //we store here downloads that arrived so that we can notify from main thread 
+		queue<ofxSimpleHttpResponse>	responsesPendingNotification; //we store here downloads that arrived so that we can notify from main thread
 
 };

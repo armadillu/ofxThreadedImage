@@ -339,10 +339,12 @@ bool ofxSimpleHttp::downloadURLtoDisk(ofxSimpleHttpResponse* resp, bool sendResu
 		if (sendResultThroughEvents ){
 			if ( !resp->ignoreReply )
 				if (timeToStop == false){	//see if we have been destructed!
-					ofNotifyEvent( newResponseEvent, *resp, this ); //should be from main thread! TODO!
+					lock();
+						responsesPendingNotification.push(*resp);
+					//ofNotifyEvent( newResponseEvent, *resp, this ); //should be from main thread! TODO!
+					unlock();
 				}
 		}
-
 
 		cout << "download finished! " << resp->url << " !" << endl;
 		ok = TRUE;
@@ -364,6 +366,17 @@ bool ofxSimpleHttp::downloadURLtoDisk(ofxSimpleHttpResponse* resp, bool sendResu
 	return ok;
 }
 
+
+void ofxSimpleHttp::update(){
+
+	lock();
+	if(responsesPendingNotification.size()){
+		ofxSimpleHttpResponse r = responsesPendingNotification.front();
+		responsesPendingNotification.pop();
+		ofNotifyEvent( newResponseEvent, r, this ); //should be from main thread! TODO!
+	}
+	unlock();
+}
 
 
 bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThroughEvents ){
