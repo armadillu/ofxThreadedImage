@@ -192,12 +192,6 @@ string ofxSimpleHttp::extractFileFromUrl(string url){
 }
 
 
-void ofxSimpleHttp::fetchURL(char* url, bool ignoreReply){
-	string aux = url;
-	fetchURL(aux, ignoreReply);
-}
-
-
 void ofxSimpleHttp::fetchURL(string url, bool ignoreReply){
 
 	if (queueLenEstimation >= maxQueueLen){
@@ -222,11 +216,6 @@ void ofxSimpleHttp::fetchURL(string url, bool ignoreReply){
 }
 
 
-ofxSimpleHttpResponse ofxSimpleHttp::fetchURLBlocking(char*  url){
-	string aux = url;
-	return fetchURLBlocking(aux);
-}
-
 
 ofxSimpleHttpResponse ofxSimpleHttp::fetchURLBlocking(string  url){
 
@@ -238,6 +227,114 @@ ofxSimpleHttpResponse ofxSimpleHttp::fetchURLBlocking(string  url){
 	bool ok = downloadURL(&response, false);
 	return response;
 }
+
+
+ofxSimpleHttpResponse ofxSimpleHttp::fetchURLtoDiskBlocking(string  url, string dirWhereToSave){
+
+	string savePath = dirWhereToSave == "" ? extractFileFromUrl(url) : ofToDataPath(dirWhereToSave) + "/" + extractFileFromUrl(url);
+
+	ofDirectory d;
+	d.createDirectory(dirWhereToSave, true, true); //create the download dir first
+
+	response.url = url;
+	response.downloadCanceled = false;
+	response.session = NULL;
+	response.fileName = savePath;
+	response.ignoreReply = false;
+	bool ok = downloadURLtoDiskBlocking(&response, false);
+	return response;
+}
+
+
+bool ofxSimpleHttp::downloadURLtoDiskBlocking(ofxSimpleHttpResponse* resp, bool sendResultThroughEvents){
+
+	bool ok;
+	ofstream myfile;
+
+	//create a file to save the stream to
+	myfile.open( resp->fileName.c_str(), std::ios::binary );
+	//myfile.open(ofToDataPath(filename).c_str()); //for not binary?
+
+	try {
+
+		ofHttpRequest request(resp->url, resp->url);
+		URI uri(request.url);
+		std::string path(uri.getPathAndQuery());
+		if (path.empty()) path = "/";
+
+		HTTPClientSession session(uri.getHost(), uri.getPort());
+		resp->session = &session; //SESSION ///////////////////////////////////////////
+
+		HTTPRequest req(HTTPRequest::HTTP_GET, path, HTTPMessage::HTTP_1_1);
+		session.setTimeout( Poco::Timespan(timeOut,0) );
+		session.sendRequest(req);
+
+		HTTPResponse res;
+		istream& rs = session.receiveResponse(res);
+		StreamCopier::copyStream(rs, myfile);
+		myfile.close();
+
+		resp->status = res.getStatus();
+		resp->timestamp = res.getDate();
+		resp->reasonForStatus = res.getReasonForStatus( res.getStatus() );
+		resp->contentType = res.getContentType();
+		resp->serverReportedSize = res.getContentLength();
+		resp->session = NULL;  //SESSION ///////////////////////////////////////////////
+
+		if(debug) printf("ofxSimpleHttp::downloadURLtoDiskBlocking() >> downloaded to %s\n", resp->fileName.c_str() );
+
+		ofFile file;
+		file.open(resp->fileName);
+		int fileSize = file.getSize();
+		file.close();
+
+		//check download file size missmatch!
+		if ( resp->serverReportedSize > 0 && resp->serverReportedSize !=  fileSize) {
+
+			if(debug) printf( "ofxSimpleHttp::downloadURLtoDiskBlocking() >> Download size mismatch (%s) >> Server: %d Downloaded: %d\n",
+							 resp->fileName.c_str(), resp->serverReportedSize, fileSize );
+			resp->reasonForStatus = "Download size mismatch";
+			resp->status = -1;
+			resp->ok = false;
+
+		}else{
+
+			if (resp->status == 200){
+				resp->ok = true;
+			}else{
+				cout << "response status is weird ? (" << resp->status << "(" << endl;
+				resp->ok = false;
+			}
+		}
+
+//		if (sendResultThroughEvents ){
+//			if ( !resp->ignoreReply )
+//				if (timeToStop == false){	//see if we have been destructed!
+//					ofNotifyEvent( newResponseEvent, *resp, this ); //should be from main thread! TODO!
+//				}
+//		}
+
+
+		cout << "download finished! " << resp->url << " !" << endl;
+		ok = TRUE;
+
+	}catch(Exception& exc){
+
+		myfile.close();
+		printf("ofxSimpleHttp::downloadURL(%s) >> Exception: %s\n", resp->fileName.c_str(), exc.displayText().c_str() );
+		resp->reasonForStatus = exc.displayText();
+		resp->ok = false;
+		resp->status = -1;
+		resp->session = NULL;
+		ok = false;
+
+		cout << "failed to download " << resp->url << " !" << endl;
+	}
+
+
+	return ok;
+}
+
 
 
 bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThroughEvents ){

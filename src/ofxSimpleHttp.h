@@ -85,17 +85,16 @@ class ofxSimpleHttp : public ofThread, public ofBaseDraws{
 		~ofxSimpleHttp();
 
 		// actions //////////////////////////////////////////////////////////////
-	
-		void						fetchURL(char* url, bool ingoreReply = false);
-		void						fetchURL(string url, bool ingoreReply = false);	
-		ofxSimpleHttpResponse		fetchURLBlocking(char* url);
+
+		void						fetchURL(string url, bool ingoreReply = false);
 		ofxSimpleHttpResponse		fetchURLBlocking(string url);
+		ofxSimpleHttpResponse		fetchURLtoDiskBlocking(string url, string dirWhereToSave = "ofxSimpleHttpDownloads");
 
 		void						draw(float x, float y , float w , float h );	//draws a box
 		void						draw(float x, float y );	//draws a box
 
-		float getHeight(){ if ( isThreadRunning() ) return 18 * 4; else return 18;}
-		float getWidth(){ return 320;}
+		float getHeight(){ if ( isThreadRunning() ) return 18 * 4; else return 18; }
+		float getWidth(){ return 320; }
 	
 		void						stopCurrentDownload();
 	
@@ -117,6 +116,8 @@ class ofxSimpleHttp : public ofThread, public ofBaseDraws{
 	private:
 		
 		bool downloadURL( ofxSimpleHttpResponse * resp, bool sendResultThroughEvents );
+		bool downloadURLtoDiskBlocking(ofxSimpleHttpResponse* resp, bool sendResultThroughEvents);
+
 		void threadedFunction();	//the queue runs here
 		string extractFileFromUrl(string url);
 			
