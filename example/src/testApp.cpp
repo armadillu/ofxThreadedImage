@@ -24,8 +24,8 @@ void testApp::draw(){
 	ofPopMatrix();
 
 	//instructions
-	ofDrawBitmapStringHighlight("press '1' to load image from http on main thread\n"
-								"press '2' to load disk image on background thread\n"
+	ofDrawBitmapStringHighlight("press '1' to load image from local disk on main thread\n"
+								"press '2' to load image from local disk on background thread\n"
 								"press '3' to load image from http on main thread\n"
 								"press '4' to load image from http on background thread\n"
 								"press '5' to save current image to disk in a background thread",

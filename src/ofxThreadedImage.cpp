@@ -34,20 +34,12 @@ void ofxThreadedImage::threadedFunction(){
 				alpha = 0;
 				ofxSimpleHttp http;
 				http.setTimeOut(timeOut);
-				ofxSimpleHttpResponse response = http.fetchURLBlocking(url);
+				ofxSimpleHttpResponse response = http.fetchURLtoDiskBlocking(url, IMG_DOWNLOAD_FOLDER_NAME);
+
 				if (response.status == 200){
 
-					ofDirectory dir;
-					dir.open(ofToDataPath(IMG_DOWNLOAD_FOLDER_NAME, false));
-					if ( !dir.exists() ){
-						dir.create();
-					}
-					string filePath = ofToDataPath( (string)IMG_DOWNLOAD_FOLDER_NAME + "/" + response.fileName, false );
-					FILE * file = fopen( filePath.c_str(), "wb");
-					fwrite (response.responseBody.c_str() , 1 , response.responseBody.length() , file );
-					fclose( file);
 					setUseTexture(false);
-					bool loaded = loadImage((string)IMG_DOWNLOAD_FOLDER_NAME + "/" + response.fileName);
+					bool loaded = loadImage(response.absolutePath);
 					if (loaded){
 						imageLoaded = true;
 					}else{

@@ -35,7 +35,7 @@
  
  */
 
-#define IMG_DOWNLOAD_FOLDER_NAME "AdvancedImageDownloads"
+#define IMG_DOWNLOAD_FOLDER_NAME "ofxThreadedImageDownloads"
 
 class ofxThreadedImage : public ofThread, public ofImage {
 
