@@ -62,20 +62,22 @@ using Poco::Net::HTTPClientSession;
 struct ofxSimpleHttpResponse{
 
 	bool						ok;
-	bool						ignoreReply;
-	bool						downloadCanceled;
-	bool						downloadToDisk;
+	bool						notifyOnSuccess;	// user wants to be notified when download is ready
+	bool						downloadCanceled;	// flag to cancel download
+	bool						downloadToDisk;		// user wants bytes on disk; otherwise just return data as string in "responseBody"
 	int							status; 			// return code for the response ie: 200 = OK
 	int							serverReportedSize;
 	string						reasonForStatus;	// text explaining the status
-	string						responseBody;		// the actual response
+	string						responseBody;		// the actual response << DATA IS HERE!
 	string						contentType;		// the mime type of the response
 	Poco::Timestamp				timestamp;			// time of the response
-	HTTPClientSession *			session;			
+	HTTPClientSession *			session;			// this is messy, only valid while the download is going om //TODO
 	string						url;
-	string						fileName;
+	string						fileName;			//file + extension, no path
+	string						absolutePath;		//where file was saved
 
 	ofxSimpleHttpResponse(){
+		session = NULL;
 		downloadToDisk = false;
 	}
 };
@@ -91,12 +93,12 @@ class ofxSimpleHttp : public ofThread, public ofBaseDraws{
 		// actions //////////////////////////////////////////////////////////////
 
 		//download to RAM ( download to ofxSimpleHttpResponse->responseBody)
-		void						fetchURL(string url, bool ingoreReply = false);
+		void						fetchURL(string url, bool notifyOnSuccess = false);
 		ofxSimpleHttpResponse		fetchURLBlocking(string url);
 
 		//download to Disk
-		void						fetchURLToDisk(string url, bool ignoreReply = false, string dirWhereToSave = ".");
-		ofxSimpleHttpResponse		fetchURLtoDiskBlocking(string url, string dirWhereToSave = ".");
+		void						fetchURLToDisk(string url, bool notifyOnSuccess = false, string outputDir = ".");
+		ofxSimpleHttpResponse		fetchURLtoDiskBlocking(string url, string outputDir = ".");
 
 		void						update(); //this is mainly used to get notifications in the main thread
 

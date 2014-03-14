@@ -80,8 +80,11 @@ void ofxSimpleHttp::threadedFunction(){
 			ofxSimpleHttpResponse * r = q.front();
 		unlock();
 
-			if(r->downloadToDisk) downloadURLtoDisk(r, true);
-			else downloadURL(r, true);
+		if(r->downloadToDisk) {
+			downloadURLtoDisk(r, true);
+		}else{
+			downloadURL(r, true);
+		}
 
 		lock();
 			q.pop();
@@ -107,7 +110,7 @@ string ofxSimpleHttp::getCurrentDownloadFileName(){
 		int n = q.size();
 		if ( isThreadRunning() && n > 0 ){
 			ofxSimpleHttpResponse * r = q.front();
-			download = ( r->fileName );
+			download = r->fileName;
 		}
 	unlock();
 	return download;
@@ -194,7 +197,7 @@ string ofxSimpleHttp::extractFileFromUrl(string url){
 }
 
 
-void ofxSimpleHttp::fetchURL(string url, bool ignoreReply){
+void ofxSimpleHttp::fetchURL(string url, bool notifyOnSuccess){
 
 	if (queueLenEstimation >= maxQueueLen){
 		printf( "ofxSimpleHttp::fetchURL can't do that, queue is too long already (%d)!\n", queueLenEstimation );
@@ -205,7 +208,7 @@ void ofxSimpleHttp::fetchURL(string url, bool ignoreReply){
 	response->url = url;
 	response->downloadCanceled = false;
 	response->fileName = extractFileFromUrl(url);
-	response->ignoreReply = ignoreReply;
+	response->notifyOnSuccess = notifyOnSuccess;
 	response->session = NULL;
 
 	lock();
@@ -225,26 +228,30 @@ ofxSimpleHttpResponse ofxSimpleHttp::fetchURLBlocking(string  url){
 	response.downloadCanceled = false;
 	response.session = NULL;
 	response.fileName = extractFileFromUrl(url);
-	response.ignoreReply = false;
+	response.notifyOnSuccess = true;
 	bool ok = downloadURL(&response, false);
 	return response;
 }
 
 
-void ofxSimpleHttp::fetchURLToDisk(string url, bool ignoreReply, string dirWhereToSave){
+void ofxSimpleHttp::fetchURLToDisk(string url, bool notifyOnSuccess, string dirWhereToSave){
 
 	if (queueLenEstimation >= maxQueueLen){
 		printf( "ofxSimpleHttp::fetchURL can't do that, queue is too long already (%d)!\n", queueLenEstimation );
 		return;
 	}
 
+	ofDirectory d;
+	d.createDirectory(dirWhereToSave, true, true); //create the download dir first
+
 	string savePath = dirWhereToSave == "" ? extractFileFromUrl(url) : ofToDataPath(dirWhereToSave, true) + "/" + extractFileFromUrl(url);
 
 	ofxSimpleHttpResponse *response = new ofxSimpleHttpResponse();
+	response->absolutePath = savePath;
 	response->url = url;
 	response->downloadCanceled = false;
 	response->fileName = extractFileFromUrl(url);
-	response->ignoreReply = ignoreReply;
+	response->notifyOnSuccess = notifyOnSuccess;
 	response->session = NULL;
 	response->downloadToDisk = true;
 
@@ -265,11 +272,13 @@ ofxSimpleHttpResponse ofxSimpleHttp::fetchURLtoDiskBlocking(string  url, string 
 	ofDirectory d;
 	d.createDirectory(dirWhereToSave, true, true); //create the download dir first
 
+	response.absolutePath = savePath;
 	response.url = url;
 	response.downloadCanceled = false;
 	response.session = NULL;
-	response.fileName = savePath;
-	response.ignoreReply = false;
+	response.fileName = extractFileFromUrl(url);
+	response.notifyOnSuccess = true;
+	response.downloadToDisk = true;
 	bool ok = downloadURLtoDisk(&response, false);
 	return response;
 }
@@ -281,7 +290,7 @@ bool ofxSimpleHttp::downloadURLtoDisk(ofxSimpleHttpResponse* resp, bool sendResu
 	ofstream myfile;
 
 	//create a file to save the stream to
-	myfile.open( ofToDataPath(resp->fileName, true ).c_str(), std::ios::binary );
+	myfile.open( resp->absolutePath.c_str() );
 	//myfile.open(ofToDataPath(filename).c_str()); //for not binary?
 
 	try {
@@ -312,8 +321,9 @@ bool ofxSimpleHttp::downloadURLtoDisk(ofxSimpleHttpResponse* resp, bool sendResu
 
 		if(debug) printf("ofxSimpleHttp::downloadURLtoDiskBlocking() >> downloaded to %s\n", resp->fileName.c_str() );
 
+		//ask the filesystem what is the real size of the file
 		ofFile file;
-		file.open(resp->fileName);
+		file.open(resp->absolutePath.c_str());
 		int fileSize = file.getSize();
 		file.close();
 
@@ -336,14 +346,16 @@ bool ofxSimpleHttp::downloadURLtoDisk(ofxSimpleHttpResponse* resp, bool sendResu
 			}
 		}
 
+		//enqueue the operation result!
 		if (sendResultThroughEvents ){
-			if ( !resp->ignoreReply )
+			if ( resp->notifyOnSuccess ){
 				if (timeToStop == false){	//see if we have been destructed!
 					lock();
 						responsesPendingNotification.push(*resp);
-					//ofNotifyEvent( newResponseEvent, *resp, this ); //should be from main thread! TODO!
+						//ofNotifyEvent( newResponseEvent, *resp, this ); //should be from main thread! TODO!
 					unlock();
 				}
+			}
 		}
 
 		cout << "download finished! " << resp->url << " !" << endl;
@@ -456,12 +468,16 @@ bool ofxSimpleHttp::downloadURL( ofxSimpleHttpResponse* resp, bool sendResultThr
 		}
 
 		if (sendResultThroughEvents ){
-			if ( !resp->ignoreReply ){
+			if ( resp->notifyOnSuccess ){
 				if (timeToStop == false){	//see if we have been destructed!
-					ofNotifyEvent( newResponseEvent, *resp, this );
+					lock();
+					responsesPendingNotification.push(*resp);
+					//ofNotifyEvent( newResponseEvent, *resp, this ); //should be from main thread! TODO!
+					unlock();
 				}
 			}
 		}
+
 
 	}catch(Exception& exc){
 		printf("ofxSimpleHttp::downloadURL(%s) >> General Exception: %s\n", resp->url.c_str(), exc.displayText().c_str() );
