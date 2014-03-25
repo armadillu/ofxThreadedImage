@@ -11,7 +11,11 @@ ofxThreadedImage::ofxThreadedImage(){
 
 ofxThreadedImage::~ofxThreadedImage(){
 	if (isThreadRunning()){
-		waitForThread(true);
+		try {
+			waitForThread(true);
+		}catch(Exception &ex) {
+			printf("ofxThreadedImage::~~ofxThreadedImage >> Exception at waitForThread %s\n", ex.displayText().c_str() );
+		}
 	}
 }
 
@@ -60,6 +64,7 @@ void ofxThreadedImage::threadedFunction(){
 	} else {
 		printf("ofxThreadedImage::threadedFunction Can't %s %s, thread is already running", whatToDo == SAVE ? "Save" : "Load",  fileName.c_str() );
 	}
+	
 	stopThread();
 
 	#if  defined(TARGET_OSX) || defined(TARGET_LINUX) /*I'm not 100% sure of linux*/
