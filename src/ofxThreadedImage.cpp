@@ -57,6 +57,11 @@ void ofxThreadedImage::threadedFunction(){
 		printf("ofxThreadedImage::threadedFunction Can't %s %s, thread is already running", whatToDo == SAVE ? "Save" : "Load",  fileName.c_str() );
 	}
 	stopThread();
+
+	#if  defined(TARGET_OSX) || defined(TARGET_LINUX) /*I'm not 100% sure of linux*/
+	pthread_detach( pthread_self() ); //this is a workaround for this issue https://github.com/openframeworks/openFrameworks/issues/2506
+	#endif
+
 }
 
 
