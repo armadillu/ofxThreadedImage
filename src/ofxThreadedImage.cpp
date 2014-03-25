@@ -18,6 +18,10 @@ ofxThreadedImage::~ofxThreadedImage(){
 
 void ofxThreadedImage::threadedFunction(){
 
+	#ifdef TARGET_OSX
+	pthread_setname_np("ofxThreadedImage");
+	#endif
+
 	if( lock() ){
 
 		switch (whatToDo) {
