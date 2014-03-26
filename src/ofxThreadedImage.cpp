@@ -7,6 +7,8 @@ ofxThreadedImage::ofxThreadedImage(){
 	alpha = 1;
 	alphaRiseSpeed = 0.05; //20 frames to full alpha
 	imageLoaded = false;
+	pendingNotification = false;
+	readyToDraw = false;
 }
 
 ofxThreadedImage::~ofxThreadedImage(){
@@ -78,6 +80,7 @@ void ofxThreadedImage::loadImageThreaded(string fileName_){
 	alpha = 0.0;
 	whatToDo = LOAD;
 	fileName = fileName_;
+	readyToDraw = false;
 	startThread(true, false);
 }
 
@@ -99,6 +102,7 @@ bool ofxThreadedImage::loadHttpImageBlocking(string url_){
 	alpha = 0;
 	whatToDo = LOAD_HTTP;
 	url = url_;
+	readyToDraw = false;
 	pendingTexture = true;
 	setUseTexture(false);
 	ofxSimpleHttp http;
@@ -133,8 +137,14 @@ void ofxThreadedImage::loadHttpImageThreaded(string url_){
 	url = url_;
 	pendingTexture = true;
 	imageLoaded = false;
+	readyToDraw = false;
 	setUseTexture(false);
 	startThread(true, false);
+}
+
+
+bool ofxThreadedImage::isReadyToDraw(){
+	return readyToDraw;
 }
 
 
@@ -142,14 +152,18 @@ bool ofxThreadedImage::arePixelsAvailable(){
 	return imageLoaded;
 }
 
+
 void ofxThreadedImage::updateTextureIfNeeded(){
 	if (pendingTexture){
  		setUseTexture(true);
 		tex.allocate(getPixelsRef());
-		update();
+		ofImage::update();
+		readyToDraw = true;
 		pendingTexture = false;
+		pendingNotification = true; //texture is loaded, notify owner!
 	}
 }
+
 
 void ofxThreadedImage::saveThreaded(string where, ofImageQualityType quality_){
 	whatToDo = SAVE;
@@ -159,15 +173,27 @@ void ofxThreadedImage::saveThreaded(string where, ofImageQualityType quality_){
 };
 
 
-void ofxThreadedImage::draw(float _x, float _y, bool fadeInOnDelayedLoad){
-	ofxThreadedImage::draw(_x, _y, getPixelsRef().getWidth(), getPixelsRef().getHeight(), fadeInOnDelayedLoad );
-}
-
-void ofxThreadedImage::draw(float _x, float _y, float _w, float _h, bool fadeInOnLoad){
+void ofxThreadedImage::update(){
 
 	if(imageLoaded){
 		updateTextureIfNeeded();
 	}
+
+	if(pendingNotification){
+		ofxThreadedImageEvent event;
+		event.image = this;
+		ofNotifyEvent( imageReadyEvent, event, this );
+		pendingNotification = false;
+	}
+}
+
+
+void ofxThreadedImage::draw(float _x, float _y, bool fadeInOnDelayedLoad){
+	ofxThreadedImage::draw(_x, _y, getPixelsRef().getWidth(), getPixelsRef().getHeight(), fadeInOnDelayedLoad );
+}
+
+
+void ofxThreadedImage::draw(float _x, float _y, float _w, float _h, bool fadeInOnLoad){
 
 	if (imageLoaded && fadeInOnLoad && alpha < 1.0f){
 		if (whatToDo == LOAD_HTTP || whatToDo == LOAD){

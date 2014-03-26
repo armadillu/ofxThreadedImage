@@ -21,11 +21,16 @@
  
 		ofxThreadedImage img;
 	 
-		void setup(){
+		void testApp::setup(){
+			ofAddListener(imageReadyEvent, this, &testApp::imageReady); //
 			img.loadImageThreaded( "monkey.jpeg" );
 		}
-	 
-		void draw(){
+
+		void testApp::newResponse(ofxThreadedImage& img){
+			//img is ready to draw!
+		}
+
+		void testApp::draw(){
 			img.draw(0,0);
 		}
 
@@ -36,6 +41,18 @@
  */
 
 #define IMG_DOWNLOAD_FOLDER_NAME "ofxThreadedImageDownloads"
+
+class ofxThreadedImage;
+
+struct ofxThreadedImageEvent{
+	bool				loaded;
+	ofxThreadedImage *	image;
+	ofxThreadedImageEvent(){
+		loaded = true;
+		image = NULL;
+	}
+};
+
 
 class ofxThreadedImage : public ofThread, public ofImage {
 
@@ -76,17 +93,23 @@ class ofxThreadedImage : public ofThread, public ofImage {
 		void draw(float _x, float _y, bool fadeInOnDelayedLoad = true);
 		void draw(float _x, float _y, float _w, float _h, bool fadeInOnDelayedLoad = true);
 
+		void update(); //this is only needed if you want notifications when the img is loaded
+		bool isReadyToDraw();
+
 		/*per frame alpha increment [0..1]*/
 		void setFadeInSpeed(float alphaRiseSpeed_){ alphaRiseSpeed = alphaRiseSpeed_; }
 
+		ofEvent<ofxThreadedImageEvent>		imageReadyEvent;
 
 	private:
 	
 		void threadedFunction();
 
 		float timeOut;
+		bool pendingNotification;
 		float alpha;
 		float alphaRiseSpeed;
-		bool imageLoaded;
+		bool imageLoaded;		//pixels are ready
+		bool readyToDraw;	//tex is ready
 };
 
