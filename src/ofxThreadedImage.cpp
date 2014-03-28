@@ -45,8 +45,7 @@ void ofxThreadedImage::threadedFunction(){
 				ofxSimpleHttp http;
 				http.setTimeOut(timeOut);
 				ofxSimpleHttpResponse response = http.fetchURLtoDiskBlocking(url, IMG_DOWNLOAD_FOLDER_NAME);
-
-				if (response.status == 200){
+				if (response.ok){
 
 					setUseTexture(false);
 					bool loaded = loadImage(response.absolutePath);
@@ -108,7 +107,7 @@ bool ofxThreadedImage::loadHttpImageBlocking(string url_){
 	ofxSimpleHttp http;
 	http.setTimeOut(timeOut);
 	ofxSimpleHttpResponse response = http.fetchURLBlocking(url);
-	if (response.status == 200){
+	if (response.ok){
 		ofDirectory dir;
 		dir.open(ofToDataPath(IMG_DOWNLOAD_FOLDER_NAME, false));
 		if ( !dir.exists()){

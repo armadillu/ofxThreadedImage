@@ -68,7 +68,7 @@ class ofxThreadedImage : public ofThread, public ofImage {
 		Action					whatToDo;
 				
 		ofxThreadedImage();	
-		~ofxThreadedImage();	
+		virtual ~ofxThreadedImage();
 	
 		//this will load the pixels only, not GL upload.
 		//Will also store a flag so that when u try to draw first, it's uploaded to GL on demand (on main thread)
