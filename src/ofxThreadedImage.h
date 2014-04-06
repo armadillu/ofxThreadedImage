@@ -111,5 +111,6 @@ class ofxThreadedImage : public ofThread, public ofImage {
 		float alphaRiseSpeed;
 		bool imageLoaded;		//pixels are ready
 		bool readyToDraw;	//tex is ready
+		bool problemLoading;
 };
 

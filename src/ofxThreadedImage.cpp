@@ -9,6 +9,7 @@ ofxThreadedImage::ofxThreadedImage(){
 	imageLoaded = false;
 	pendingNotification = false;
 	readyToDraw = false;
+	problemLoading = false;
 }
 
 ofxThreadedImage::~ofxThreadedImage(){
@@ -80,6 +81,7 @@ void ofxThreadedImage::loadImageThreaded(string fileName_){
 	whatToDo = LOAD;
 	fileName = fileName_;
 	readyToDraw = false;
+	problemLoading = false;
 	startThread(true, false);
 }
 
@@ -87,13 +89,16 @@ void ofxThreadedImage::loadImageThreaded(string fileName_){
 void ofxThreadedImage::loadImageBlocking(string fileName){
 	imageLoaded = false;
 	whatToDo = LOAD;
+	problemLoading = false;
 	setUseTexture(false);
 	alpha = 0.0;
 	bool loaded = loadImage(fileName);
-	if (loaded){
-		pendingTexture = true;
-		imageLoaded = true;
+	if (!loaded){
+		cout << "img couldnt load!" << endl;
+		problemLoading = true;
 	}
+	pendingTexture = true;
+	imageLoaded = true;
 }
 
 
@@ -103,6 +108,7 @@ bool ofxThreadedImage::loadHttpImageBlocking(string url_){
 	url = url_;
 	readyToDraw = false;
 	pendingTexture = true;
+	problemLoading = false;
 	setUseTexture(false);
 	ofxSimpleHttp http;
 	http.setTimeOut(timeOut);
@@ -136,6 +142,7 @@ void ofxThreadedImage::loadHttpImageThreaded(string url_){
 	url = url_;
 	pendingTexture = true;
 	imageLoaded = false;
+	problemLoading = false;
 	readyToDraw = false;
 	setUseTexture(false);
 	startThread(true, false);
@@ -154,11 +161,13 @@ bool ofxThreadedImage::arePixelsAvailable(){
 
 void ofxThreadedImage::updateTextureIfNeeded(){
 	if (pendingTexture){
- 		setUseTexture(true);
-		tex.allocate(getPixelsRef());
-		ofImage::update();
-		readyToDraw = true;
-		pendingTexture = false;
+		if (!problemLoading){
+			setUseTexture(true);
+			tex.allocate(getPixelsRef());
+			ofImage::update();
+			readyToDraw = true;
+			pendingTexture = false;
+		}
 		pendingNotification = true; //texture is loaded, notify owner!
 	}
 }
@@ -181,6 +190,10 @@ void ofxThreadedImage::update(){
 	if(pendingNotification){
 		ofxThreadedImageEvent event;
 		event.image = this;
+		if(problemLoading){
+			event.loaded = false;
+			imageLoaded = false;
+		}
 		ofNotifyEvent( imageReadyEvent, event, this );
 		pendingNotification = false;
 	}
