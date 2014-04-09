@@ -94,7 +94,7 @@ void ofxThreadedImage::loadImageBlocking(string fileName){
 	alpha = 0.0;
 	bool loaded = loadImage(fileName);
 	if (!loaded){
-		cout << "img couldnt load!" << endl;
+		cout << "ofxThreadedImage:: img couldnt load!" << endl;
 		problemLoading = true;
 	}
 	pendingTexture = true;
