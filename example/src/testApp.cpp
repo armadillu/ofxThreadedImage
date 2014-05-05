@@ -6,6 +6,11 @@ void testApp::setup(){
 	ofBackground(22);
 }
 
+void testApp::update(){
+ 
+    img.update();
+    
+}
 
 void testApp::draw(){
 
