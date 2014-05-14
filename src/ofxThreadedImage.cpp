@@ -17,7 +17,7 @@ ofxThreadedImage::~ofxThreadedImage(){
 		try {
 			waitForThread(true);
 		}catch(Exception &ex) {
-			printf("ofxThreadedImage::~~ofxThreadedImage >> Exception at waitForThread %s\n", ex.displayText().c_str() );
+			ofLogError("ofxThreadedImage", "Exception at waitForThread %s\n", ex.displayText().c_str() );
 		}
 	}
 }
@@ -64,7 +64,7 @@ void ofxThreadedImage::threadedFunction(){
 		unlock();
 
 	} else {
-		printf("ofxThreadedImage::threadedFunction Can't %s %s, thread is already running", whatToDo == SAVE ? "Save" : "Load",  fileName.c_str() );
+		ofLogError("ofxThreadedImage::threadedFunction Can't %s %s, thread is already running", whatToDo == SAVE ? "Save" : "Load",  fileName.c_str() );
 	}
 	
 	stopThread();
@@ -94,7 +94,7 @@ void ofxThreadedImage::loadImageBlocking(string fileName){
 	alpha = 0.0;
 	bool loaded = loadImage(fileName);
 	if (!loaded){
-		cout << "ofxThreadedImage:: img couldnt load!" << endl;
+		ofLogError() << "ofxThreadedImage:: img couldnt load!" << endl;
 		problemLoading = true;
 	}
 	pendingTexture = true;
