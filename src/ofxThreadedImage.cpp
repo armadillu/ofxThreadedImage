@@ -164,6 +164,8 @@ void ofxThreadedImage::updateTextureIfNeeded(){
 		if (!problemLoading){
 			setUseTexture(true);
 			tex.allocate(getPixelsRef());
+			tex.setCompression(compression);
+			//tex.setTextureMinMagFilter(GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR);
 			ofImage::update();
 			readyToDraw = true;
 			pendingTexture = false;
@@ -180,6 +182,10 @@ void ofxThreadedImage::saveThreaded(string where, ofImageQualityType quality_){
 	startThread(false, false);   // !blocking, !verbose
 };
 
+
+void ofxThreadedImage::setTexCompression(ofTexCompression c){
+	compression = c;
+}
 
 void ofxThreadedImage::update(){
 

@@ -69,6 +69,8 @@ class ofxThreadedImage : public ofThread, public ofImage {
 				
 		ofxThreadedImage();	
 		virtual ~ofxThreadedImage();
+
+		void setTexCompression(ofTexCompression c);
 	
 		//this will load the pixels only, not GL upload.
 		//Will also store a flag so that when u try to draw first, it's uploaded to GL on demand (on main thread)
@@ -102,7 +104,8 @@ class ofxThreadedImage : public ofThread, public ofImage {
 		ofEvent<ofxThreadedImageEvent>		imageReadyEvent;
 
 	private:
-	
+
+		ofTexCompression compression;
 		void threadedFunction();
 
 		float timeOut;
