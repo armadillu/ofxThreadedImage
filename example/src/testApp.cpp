@@ -9,7 +9,6 @@ void testApp::setup(){
 void testApp::update(){
  
     img.update();
-    
 }
 
 void testApp::draw(){
@@ -36,6 +35,8 @@ void testApp::draw(){
 								"press '5' to save current image to disk in a background thread",
 								20, ofGetHeight() - 80
 								);
+
+	img.constrainImageSize(200); //this will make any image loaded fit in this size!
 }
 
 

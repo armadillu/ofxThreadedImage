@@ -1,5 +1,9 @@
 
 #include "ofxThreadedImage.h"
+#if (USE_OPENCV_TO_RESIZE)
+#include "ofxOpenCv.h"
+#endif
+
 
 ofxThreadedImage::ofxThreadedImage(){
 	pendingTexture = false;
@@ -10,6 +14,8 @@ ofxThreadedImage::ofxThreadedImage(){
 	pendingNotification = false;
 	readyToDraw = false;
 	problemLoading = false;
+	resizeAfterLoad = false;
+	compression = OF_COMPRESS_NONE;
 }
 
 ofxThreadedImage::~ofxThreadedImage(){
@@ -22,6 +28,42 @@ ofxThreadedImage::~ofxThreadedImage(){
 	}
 }
 
+void ofxThreadedImage::resizeIfNeeded(){
+	if (resizeAfterLoad){
+		int w = getWidth();
+		int h = getHeight();
+		int largestSide = MAX(w, h);
+		if(largestSide > maxSideSize){ //we need resize!
+			float scale = maxSideSize / (float)largestSide;
+			//float t1 = ofGetElapsedTimef();
+			int newW = w * scale;
+			int newH = h * scale;
+			#if USE_OPENCV_TO_RESIZE
+			if (type == OF_IMAGE_COLOR){
+				ofxCvColorImage cvImg;
+				cvImg.setUseTexture(false);
+				cvImg.allocate(w, h);
+				cvImg.setFromPixels(getPixels(), w, h);
+				ofxCvColorImage cvImgsmall;
+				cvImgsmall.setUseTexture(false);
+				cvImgsmall.allocate(newW, newH);
+				cvImgsmall.scaleIntoMe(cvImg, CV_INTER_AREA);
+				setFromPixels(cvImgsmall.getPixels(), newW, newH, OF_IMAGE_COLOR);
+			}else{
+				resize(newW, newH); //TODO opencv resizing is much faster!
+			}
+			#else
+			resize(newW, newH); //TODO opencv resizing is much faster!
+			#endif
+			//ofLog() << "time resize: " + ofToString( ofGetElapsedTimef() - t1 );
+		}
+	}
+}
+
+void ofxThreadedImage::constrainImageSize(int largestSide){
+	maxSideSize = largestSide;
+	resizeAfterLoad = true;
+}
 
 void ofxThreadedImage::threadedFunction(){
 
@@ -36,10 +78,12 @@ void ofxThreadedImage::threadedFunction(){
 				ofSaveImage(getPixelsRef(), fileName, quality);
 				break;
 
-			case LOAD:
+			case LOAD:{
 				alpha = 0.0f;
+				//float t1 = ofGetElapsedTimef();
 				loadImageBlocking(fileName);
-				break;
+				//ofLog() << "time to load: " << ofGetElapsedTimef() - t1;
+				}break;
 
 			case LOAD_HTTP:
 				alpha = 0;
@@ -51,6 +95,7 @@ void ofxThreadedImage::threadedFunction(){
 					setUseTexture(false);
 					bool loaded = loadImage(response.absolutePath);
 					if (loaded){
+						resizeIfNeeded();
 						imageLoaded = true;
 					}else{
 						ofLog(OF_LOG_ERROR, "loadHttpImageBlocking() failed to load from disk (%d) > %s\n", response.status, url.c_str() );
@@ -58,7 +103,6 @@ void ofxThreadedImage::threadedFunction(){
 				}else{
 					ofLog(OF_LOG_ERROR, "loadHttpImageBlocking() failed to download (%d) > %s\n", response.status, url.c_str() );
 				}
-
 				break;
 		}
 		unlock();
@@ -96,9 +140,11 @@ void ofxThreadedImage::loadImageBlocking(string fileName){
 	if (!loaded){
 		ofLogError() << "ofxThreadedImage:: img couldnt load!" << endl;
 		problemLoading = true;
+	}else{
+		resizeIfNeeded();
+		imageLoaded = true;
 	}
 	pendingTexture = true;
-	imageLoaded = true;
 }
 
 
@@ -107,7 +153,6 @@ bool ofxThreadedImage::loadHttpImageBlocking(string url_){
 	whatToDo = LOAD_HTTP;
 	url = url_;
 	readyToDraw = false;
-	pendingTexture = true;
 	problemLoading = false;
 	setUseTexture(false);
 	ofxSimpleHttp http;
@@ -130,8 +175,10 @@ bool ofxThreadedImage::loadHttpImageBlocking(string url_){
 	imageLoaded = false;
 	bool ok = loadImage((string)IMG_DOWNLOAD_FOLDER_NAME + "/" + response.fileName);
 	if(ok){
+		resizeIfNeeded();
 		imageLoaded = true;
 	}
+	pendingTexture = true;
 	return ok;
 }
 
@@ -163,8 +210,8 @@ void ofxThreadedImage::updateTextureIfNeeded(){
 	if (pendingTexture){
 		if (!problemLoading){
 			setUseTexture(true);
-			tex.allocate(getPixelsRef());
 			tex.setCompression(compression);
+			tex.allocate(getPixelsRef());
 			//tex.setTextureMinMagFilter(GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR);
 			ofImage::update();
 			readyToDraw = true;

@@ -42,6 +42,9 @@
 
 #define IMG_DOWNLOAD_FOLDER_NAME "ofxThreadedImageDownloads"
 
+//if an image requies resizing, do it with openCV of with regular ofImage methods (much slower)
+#define USE_OPENCV_TO_RESIZE	true
+
 class ofxThreadedImage;
 
 struct ofxThreadedImageEvent{
@@ -77,6 +80,9 @@ class ofxThreadedImage : public ofThread, public ofImage {
 		void loadImageBlocking(string fileName);
 		void loadImageThreaded(string fileName);
 
+		void constrainImageSize(int largestSide); //if the loaded image turns out to be larger than this
+	//(bigger side), then we shrink it down to fit this new size (for the largest side)
+
 		bool loadHttpImageBlocking(string url);
 		void loadHttpImageThreaded(string url);
 		void setHttpRequestTimeOut(float t){ timeOut = t;}
@@ -107,6 +113,7 @@ class ofxThreadedImage : public ofThread, public ofImage {
 
 		ofTexCompression compression;
 		void threadedFunction();
+	void resizeIfNeeded();
 
 		float timeOut;
 		bool pendingNotification;
@@ -115,5 +122,8 @@ class ofxThreadedImage : public ofThread, public ofImage {
 		bool imageLoaded;		//pixels are ready
 		bool readyToDraw;	//tex is ready
 		bool problemLoading;
+
+	bool resizeAfterLoad;
+	int maxSideSize; //if resize, constrain into this side for the largest side
 };
 
