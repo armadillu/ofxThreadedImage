@@ -43,7 +43,9 @@
 #define IMG_DOWNLOAD_FOLDER_NAME "ofxThreadedImageDownloads"
 
 //if an image requies resizing, do it with openCV of with regular ofImage methods (much slower)
+#ifndef USE_OPENCV_TO_RESIZE
 #define USE_OPENCV_TO_RESIZE	true
+#endif
 
 class ofxThreadedImage;
 
